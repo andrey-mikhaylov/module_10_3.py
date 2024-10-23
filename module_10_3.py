@@ -16,6 +16,54 @@ class Bank:
         # объект класса Lock для атомарного изменения баланса
         self.balance_lock = threading.Lock()
 
+    def deposit_money(self, money: int):
+        """
+        Пополнение баланса
+        :param money: сумма пополнения
+        """
+        with self.balance_lock:
+            self.balance += money
+            new_balance = self.balance
+        print(f"Пополнение: {money}. Баланс: {new_balance}\n", end='')
+
+        if self.balance >= 500 and self.withdraw_lock.locked():
+            self.withdraw_lock.release()
+
+        time.sleep(0.001)
+
+    def take_money_or_cancel(self, money: int):
+        """
+        Снятие средств с баланса.
+        Если средств недостаточно, запрос будет отклонён, но поток всё равно будет ждать достаточных средств
+        :param money: сумма запроса на снятие
+        """
+        print(f"Запрос на {money}\n", end='')
+
+        if money > self.balance:
+            print("Запрос отклонён, недостаточно средств\n", end='')
+            self.withdraw_lock.acquire()
+        else:
+            with self.balance_lock:
+                self.balance -= money
+                new_balance = self.balance
+            print(f"Снятие: {money}. Баланс: {new_balance}\n", end='')
+
+    def take_money_or_wait(self, money: int):
+        """
+        Снятие средств с баланса.
+        Если средств недостаточно, поток будет остановлен до появления достаточных средств
+        :param money: сумма запроса на снятие
+        """
+        print(f"Запрос на {money}\n", end='')
+
+        if money > self.balance:
+            print("Запрос отклонён, недостаточно средств\n", end='')
+            self.withdraw_lock.acquire()
+
+        with self.balance_lock:
+            self.balance -= money
+            new_balance = self.balance
+        print(f"Снятие: {money}. Баланс: {new_balance}\n", end='')
 
     def deposit(self):
         """
@@ -23,16 +71,7 @@ class Bank:
         """
         for n in range(100):
             money = random.randint(50, 500)
-
-            with self.balance_lock:
-                self.balance += money
-                new_balance = self.balance
-            print(f"Пополнение: {money}. Баланс: {new_balance}\n", end='')
-
-            if self.balance >= 500 and self.withdraw_lock.locked():
-                self.withdraw_lock.release()
-
-            time.sleep(0.001)
+            self.deposit_money(money)
 
     def take(self):
         """
@@ -40,18 +79,8 @@ class Bank:
         """
         for n in range(100):
             money = random.randint(50, 500)
-
-            print(f"Запрос на {money}\n", end='')
-
-            if money > self.balance:
-                print("Запрос отклонён, недостаточно средств\n", end='')
-                self.withdraw_lock.acquire()
-            else:
-                with self.balance_lock:
-                    self.balance -= money
-                    new_balance = self.balance
-                print(f"Снятие: {money}. Баланс: {new_balance}\n", end='')
-
+#            self.take_money_or_cancel(money)
+            self.take_money_or_wait(money)
 
 
 def test():
