@@ -48,23 +48,6 @@ class Bank:
                 new_balance = self.balance
             print(f"Снятие: {money}. Баланс: {new_balance}\n", end='')
 
-    def take_money_or_wait(self, money: int):
-        """
-        Снятие средств с баланса.
-        Если средств недостаточно, поток будет остановлен до появления достаточных средств
-        :param money: сумма запроса на снятие
-        """
-        print(f"Запрос на {money}\n", end='')
-
-        if money > self.balance:
-            print("Запрос отклонён, недостаточно средств\n", end='')
-            self.withdraw_lock.acquire()
-
-        with self.balance_lock:
-            self.balance -= money
-            new_balance = self.balance
-        print(f"Снятие: {money}. Баланс: {new_balance}\n", end='')
-
     def deposit(self):
         """
         Будет совершать 100 транзакций пополнения средств.
@@ -79,8 +62,7 @@ class Bank:
         """
         for n in range(100):
             money = random.randint(50, 500)
-#            self.take_money_or_cancel(money)
-            self.take_money_or_wait(money)
+            self.take_money_or_cancel(money)
 
 
 def test():
